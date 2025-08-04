@@ -10,6 +10,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.util.Random;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 
 
 // DO NOT EDIT starts
@@ -66,9 +68,21 @@ public class StubResolver implements StubResolverInterface {
             dataStream.writeByte(labelBytes.length);
             dataStream.write(labelBytes);
         }
+        dataStream.writeByte(0);
 
+        short recordType = 1;
+        dataStream.writeShort(recordType);  // A record type 1
 
-        
+        short recordClass = 1;
+        dataStream.writeShort(recordClass);  //internet class type 1
+
+        byte[] dnsQueryBytes = byteStream.toByteArray(); //getting raw bytes of query being built
+
+        //UDP packet and socket send/recieve setup
+        DatagramSocket socket = new DatagramSocket();
+        DatagramPacket packetSending = new DatagramPacket(dnsQueryBytes, dnsQueryBytes.length, dnsServerAddress, dnsServerPort);
+        socket.send(packetSending);
+
 
 	throw new Exception("Not implemented");
     }
