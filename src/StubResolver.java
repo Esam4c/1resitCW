@@ -60,11 +60,13 @@ public class StubResolver implements StubResolverInterface {
         dataStream.writeShort(0);
 
         //domain name/qname
-        String[] labels = domainName.split("\\."); //split domain name
-        for (String label : labels) {
-            dataStream.writeByte(label.length());
-            dataStream.writeBytes(label);
+        String[] domainParts = domainName.split("\\."); //split domain name
+        for (int i = 0; i < domainParts.length; i++) {
+            byte[] labelBytes = domainParts[i].getBytes("UTF-8");
+            dataStream.writeByte(labelBytes.length);
+            dataStream.write(labelBytes);
         }
+
 
         
 
