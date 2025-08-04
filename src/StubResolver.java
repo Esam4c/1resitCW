@@ -2,11 +2,13 @@
 // Coursework 2024/2025 Resit
 //
 // Submission by
-// YOUR_NAME_GOES_HERE
-// YOUR_STUDENT_ID_NUMBER_GOES_HERE
-// YOUR_EMAIL_GOES_HERE
+// YOUR_NAME_GOES_HERE Mohammed Choudhury
+// YOUR_STUDENT_ID_NUMBER_GOES_HERE 220077503
+// YOUR_EMAIL_GOES_HERE Mohammed.Choudhury4@city.ac.uk
 
+import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
+
 
 // DO NOT EDIT starts
 interface StubResolverInterface {
@@ -21,12 +23,16 @@ interface StubResolverInterface {
 
 public class StubResolver implements StubResolverInterface {
 
+    private InetAddress dnsServerAddress;
+    private int dnsServerPort;
+
     public void setNameServer(InetAddress ipAddress, int port) throws Exception {
 	// This method must be called first.
 	// You can assume that the IP address and port number lead to
 	// a working domain name server which supports recursive
 	// queries.
-	throw new Exception("Not implemented");
+        this.dnsServerAddress = ipAddress; //assign address
+        this.dnsServerPort = port; //asign port
     }
 
     public InetAddress recursiveResolveAddress(String domainName) throws Exception {
@@ -39,6 +45,12 @@ public class StubResolver implements StubResolverInterface {
 	// address from one of them.  If there is no record then it
 	// returns null.  In any other case it throws an informative
 	// exception.
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); //create bytearray
+        
+
+
+
+
 	throw new Exception("Not implemented");
     }
     
