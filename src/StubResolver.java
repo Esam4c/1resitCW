@@ -7,7 +7,9 @@
 // YOUR_EMAIL_GOES_HERE Mohammed.Choudhury4@city.ac.uk
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.net.InetAddress;
+import java.util.Random;
 
 
 // DO NOT EDIT starts
@@ -45,11 +47,19 @@ public class StubResolver implements StubResolverInterface {
 	// address from one of them.  If there is no record then it
 	// returns null.  In any other case it throws an informative
 	// exception.
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(); //create bytearray
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        DataOutputStream dataStream = new DataOutputStream(byteStream); //build packet in memory
+
+        short transactionNum = (short) new Random().nextInt();
+        dataStream.writeShort(transactionNum); //random number for query
+
+        dataStream.writeShort(0x0100); //start of recursive query
+        dataStream.writeShort(1); //ask once
+        dataStream.writeShort(0); //answer 0 for queryt
+        dataStream.writeShort(0); //authority count
+        dataStream.writeShort(0);
+
         
-
-
-
 
 	throw new Exception("Not implemented");
     }
