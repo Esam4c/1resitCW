@@ -14,6 +14,8 @@ import java.net.InetAddress;
 import java.util.Random;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.ArrayList;
+import java.util.List;
 
 
 // DO NOT EDIT starts
@@ -232,88 +234,114 @@ public class StubResolver implements StubResolverInterface {
         return null;
     }
 
-        public String recursiveResolveName (String domainName,int type) throws Exception {
-            // You can assume that domainName is a valid domain name.
-            //
-            // You can assume that type is one of NS, MX or CNAME.
-            //
-            // Performs a recursive resolution for domainName's resource
-            // record using the name server given by setNameServer.
-            //
-            // If the domainName has appropriate records, it returns the
-            // domain name contained in one of the records. If there is no
-            // record then it returns null.  In any other case it throws
-            // an informative exception.
+    public String recursiveResolveName(String domainName, int type) throws Exception {
+        // You can assume that domainName is a valid domain name.
+        //
+        // You can assume that type is one of NS, MX or CNAME.
+        //
+        // Performs a recursive resolution for domainName's resource
+        // record using the name server given by setNameServer.
+        //
+        // If the domainName has appropriate records, it returns the
+        // domain name contained in one of the records. If there is no
+        // record then it returns null.  In any other case it throws
+        // an informative exception.
 
-            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-            DataOutputStream dataStream = new DataOutputStream(byteStream);
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        DataOutputStream dataStream = new DataOutputStream(byteStream);
 
-            short transactionNum = (short) new Random().nextInt();
-            dataStream.writeShort(transactionNum);
-            dataStream.writeShort(0x0100);
-            dataStream.writeShort(1);
-            dataStream.writeShort(0);
-            dataStream.writeShort(0);
-            dataStream.writeShort(0);
+        short transactionNum = (short) new Random().nextInt();
+        dataStream.writeShort(transactionNum);
+        dataStream.writeShort(0x0100);
+        dataStream.writeShort(1);
+        dataStream.writeShort(0);
+        dataStream.writeShort(0);
+        dataStream.writeShort(0);
 
-            String[] domainParts = domainName.split("\\.");
-            for (int i = 0; i < domainParts.length; i++) {
-                byte[] labelBytes = domainParts[i].getBytes("UTF-8");
-                dataStream.writeByte(labelBytes.length);
-                dataStream.write(labelBytes);
+        String[] domainParts = domainName.split("\\.");
+        for (int i = 0; i < domainParts.length; i++) {
+            byte[] labelBytes = domainParts[i].getBytes("UTF-8");
+            dataStream.writeByte(labelBytes.length);
+            dataStream.write(labelBytes);
+        }
+        dataStream.writeByte(0);
+
+        dataStream.writeShort(type);
+        dataStream.writeShort(1);
+
+        byte[] dnsQueryBytes = byteStream.toByteArray();
+        DatagramSocket socket = new DatagramSocket();
+        DatagramPacket packetSending = new DatagramPacket(dnsQueryBytes, dnsQueryBytes.length, dnsServerAddress, dnsServerPort);
+        socket.send(packetSending);
+        byte[] serverResponseBuffer = new byte[512];
+        DatagramPacket responsePacket = new DatagramPacket(serverResponseBuffer, serverResponseBuffer.length);
+        socket.receive(responsePacket);
+        socket.close();
+
+        ByteArrayInputStream responseStreamBytes = new ByteArrayInputStream(serverResponseBuffer);
+        DataInputStream responseStreamData = new DataInputStream(responseStreamBytes);
+
+        short receivedTransactionID = responseStreamData.readShort();
+        if (receivedTransactionID != transactionNum) {
+            throw new Exception("QUERY FAILED! Transaction IDS don't match!");
+        }
+        responseStreamData.readShort();
+        short questions = responseStreamData.readShort();
+        short answers = responseStreamData.readShort();
+        responseStreamData.readShort();
+        responseStreamData.readShort();
+
+        for (int i = 0; i < questions; i++) {
+            int labelLength;
+            while ((labelLength = responseStreamData.readByte()) != 0) {
+                responseStreamData.skipBytes(labelLength);
             }
-            dataStream.writeByte(0);
+            responseStreamData.skipBytes(4);
+        }
 
-            dataStream.writeShort(type);
-            dataStream.writeShort(1);
-
-            byte[] dnsQueryBytes = byteStream.toByteArray();
-            DatagramSocket socket = new DatagramSocket();
-            DatagramPacket packetSending = new DatagramPacket(dnsQueryBytes, dnsQueryBytes.length, dnsServerAddress, dnsServerPort);
-            socket.send(packetSending);
-            byte[] serverResponseBuffer = new byte[512];
-            DatagramPacket responsePacket = new DatagramPacket(serverResponseBuffer, serverResponseBuffer.length);
-            socket.receive(responsePacket);
-            socket.close();
-
-            ByteArrayInputStream responseStreamBytes = new ByteArrayInputStream(serverResponseBuffer);
-            DataInputStream responseStreamData = new DataInputStream(responseStreamBytes);
-
-            short receivedTransactionID = responseStreamData.readShort();
-            if (receivedTransactionID != transactionNum) {
-                throw new Exception("QUERY FAILED! Transaction IDS don't match!");
-            }
+        for (int i = 0; i < answers; i++) {
             responseStreamData.readShort();
-            short questions = responseStreamData.readShort();
-            short answers = responseStreamData.readShort();
+            short answerType = responseStreamData.readShort();
             responseStreamData.readShort();
-            responseStreamData.readShort();
+            responseStreamData.readInt();
+            short dataLen = responseStreamData.readShort();
 
-            for (int i = 0; i < questions; i++) {
-                int labelLength;
-                while ((labelLength = responseStreamData.readByte()) != 0) {
-                    responseStreamData.skipBytes(labelLength);
+            if (answerType == type) {
+                if (answerType == 15) { // MX record
+                    responseStreamData.skipBytes(2); // Skip preference
                 }
-                responseStreamData.skipBytes(4);
+
+
+                throw new Exception("Not implemented");
             }
-
-            for (int i = 0; i < answers; i++) {
-                responseStreamData.readShort();
-                short answerType = responseStreamData.readShort();
-                responseStreamData.readShort();
-                responseStreamData.readInt();
-                short dataLen = responseStreamData.readShort();
-
-                if (answerType == type) {
-                    if (answerType == 15) { // MX record
-                        responseStreamData.skipBytes(2); // Skip preference
-                    }
-
-
-
-
-
-            throw new Exception("Not implemented");
         }
     }
 
+    //my own helper method to parse a domain name from a DNS response / handling pointers
+    private String helperParseName(DataInputStream dataStream, byte[] fullPacket) throws Exception {
+        List<String> labels = new ArrayList<>();
+        int length = dataStream.readUnsignedByte();
+
+        while (length != 0) {
+            //check for pointer
+            if ((length & 0xC0) == 0xC0) {
+                int offset = ((length & 0x3F) << 8) + dataStream.readUnsignedByte();
+
+                //create new stream from pointer's offset
+                ByteArrayInputStream newStream = new ByteArrayInputStream(fullPacket, offset, fullPacket.length - offset);
+                DataInputStream newStreamCast = new DataInputStream(newStream);
+
+                //recursively parse name
+                labels.add(helperParseName(newStreamCast, fullPacket));
+                return String.join(".", labels);
+            } else {//normal label
+                byte[] labelBytes = new byte[length];
+                dataStream.readFully(labelBytes);
+                labels.add(new String(labelBytes, "UTF-8"));
+                length = dataStream.readUnsignedByte();
+            }
+        }
+        return String.join(".", labels);
+
+    }
+}
