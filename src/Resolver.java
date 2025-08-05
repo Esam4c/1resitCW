@@ -7,6 +7,15 @@
 // YOUR_EMAIL_GOES_HERE
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.util.Random;
 
 // DO NOT EDIT starts
 interface ResolverInterface {
@@ -21,26 +30,47 @@ interface ResolverInterface {
 
 public class Resolver implements ResolverInterface {
 
+    private InetAddress rootServerAddress;
+    private int rootServerPort;
+
     public void setNameServer(InetAddress ipAddress, int port) throws Exception {
-	// This method must be called first.
-	// You can assume that the IP address and port number lead to
-	// a working domain name server which supports iterative
-	// queries.
-	throw new Exception("Not implemented");
+        // This method must be called first.
+        // You can assume that the IP address and port number lead to
+        // a working domain name server which supports iterative
+        // queries.
+
+        this.rootServerAddress = ipAddress;
+        this.rootServerPort = port;
     }
 
-    public InetAddress iterativeResolveAddress(String domainName) throws Exception {
-	// You can assume that domainName is a valid domain name.
-	//
-	// Performs a iterative resolution for domainName's A resource
-	// record using the name server given by setNameServer.
-	//
-	// If the domainName has A records, it returns the IP
-	// address from one of them.  If there is no record then it
-	// returns null.  In any other case it throws an informative
-	// exception.
-	throw new Exception("Not implemented");
+        public InetAddress iterativeResolveAddress(String domainName) throws Exception {
+            // You can assume that domainName is a valid domain name.
+            //
+            // Performs a iterative resolution for domainName's A resource
+            // record using the name server given by setNameServer.
+            //
+            // If the domainName has A records, it returns the IP
+            // address from one of them.  If there is no record then it
+            // returns null.  In any other case it throws an informative
+            // exception.
+
+            // start the seaarch from root servver
+            InetAddress nextServerToQuery = rootServerAddress;
+
+            // keep looping until answer is found or fail
+            int queriesSent = 0;
+            while (queriesSent < 20) { // Safety limit to prevent infinite loops.
+
+                queriesSent++; // Increment the counter
+                break; // For now, we stop after one loop.
+            }
+
+            throw new Exception("Not implemented yet");
+        }
+
+
     }
+
     
     public String iterativeResolveText(String domainName) throws Exception {
 	// You can assume that domainName is a valid domain name.
