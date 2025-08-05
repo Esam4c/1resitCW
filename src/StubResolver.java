@@ -120,15 +120,28 @@ public class StubResolver implements StubResolverInterface {
         }
 
         //loop for 'A' record
+        for (int i = 0; i < answers; i++) {
+            //read name of field
+            responseStreamData.readShort();
 
-        for(int i=0; i < answers; i++) {
-            short namePointer = responseStreamData.readShort();
-            if ((namePointer & 0xC000) != 0xC000){
-                throw new Exception ("DNS Response PARSING error! Expected name pointer not found.")
+
+            short answerType = responseStreamData.readShort();
+            responseStreamData.readShort(); // class
+            responseStreamData.readInt();   // TTL
+            short dataLen = responseStreamData.readShort();
+
+            // checks if 'A' record
+            if (answerType == 1) {
+                byte[] ipBytes = new byte[dataLen];
+                responseStreamData.readFully(ipBytes);
+                return InetAddress.getByAddress(ipBytes);
+            } else {
+                // if not, skip over
+                responseStreamData.skipBytes(dataLen);
             }
-
-
         }
+        return null;
+
 
 	throw new Exception("Not implemented");
     }
