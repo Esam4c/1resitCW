@@ -106,9 +106,29 @@ public class StubResolver implements StubResolverInterface {
         short answers = responseStreamData.readShort();
         short authority = responseStreamData.readShort();
         short additional = responseStreamData.readShort();
+        //error-check for query=response
+        if (receivedTransactionID != transactionNum) {
+            throw new Exception("QUERY FAILED! Transaction IDS don't match!")
+        }
+
+        for (int i = 0; i < questions; i++) {
+            int labelLength;
+            while ((labelLength = responseStreamData.readByte()) != 0) {
+                responseStreamData.skipBytes(labelLength);
+            }
+            responseStreamData.skipBytes(4);
+        }
+
+        //loop for 'A' record
+
+        for(int i=0; i < answers; i++) {
+            short namePointer = responseStreamData.readShort();
+            if ((namePointer & 0xC000) != 0xC000){
+                throw new Exception ("DNS Response PARSING error! Expected name pointer not found.")
+            }
 
 
-
+        }
 
 	throw new Exception("Not implemented");
     }
