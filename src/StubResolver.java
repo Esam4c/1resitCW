@@ -244,6 +244,75 @@ public class StubResolver implements StubResolverInterface {
             // domain name contained in one of the records. If there is no
             // record then it returns null.  In any other case it throws
             // an informative exception.
+
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            DataOutputStream dataStream = new DataOutputStream(byteStream);
+
+            short transactionNum = (short) new Random().nextInt();
+            dataStream.writeShort(transactionNum);
+            dataStream.writeShort(0x0100);
+            dataStream.writeShort(1);
+            dataStream.writeShort(0);
+            dataStream.writeShort(0);
+            dataStream.writeShort(0);
+
+            String[] domainParts = domainName.split("\\.");
+            for (int i = 0; i < domainParts.length; i++) {
+                byte[] labelBytes = domainParts[i].getBytes("UTF-8");
+                dataStream.writeByte(labelBytes.length);
+                dataStream.write(labelBytes);
+            }
+            dataStream.writeByte(0);
+
+            dataStream.writeShort(type);
+            dataStream.writeShort(1);
+
+            byte[] dnsQueryBytes = byteStream.toByteArray();
+            DatagramSocket socket = new DatagramSocket();
+            DatagramPacket packetSending = new DatagramPacket(dnsQueryBytes, dnsQueryBytes.length, dnsServerAddress, dnsServerPort);
+            socket.send(packetSending);
+            byte[] serverResponseBuffer = new byte[512];
+            DatagramPacket responsePacket = new DatagramPacket(serverResponseBuffer, serverResponseBuffer.length);
+            socket.receive(responsePacket);
+            socket.close();
+
+            ByteArrayInputStream responseStreamBytes = new ByteArrayInputStream(serverResponseBuffer);
+            DataInputStream responseStreamData = new DataInputStream(responseStreamBytes);
+
+            short receivedTransactionID = responseStreamData.readShort();
+            if (receivedTransactionID != transactionNum) {
+                throw new Exception("QUERY FAILED! Transaction IDS don't match!");
+            }
+            responseStreamData.readShort();
+            short questions = responseStreamData.readShort();
+            short answers = responseStreamData.readShort();
+            responseStreamData.readShort();
+            responseStreamData.readShort();
+
+            for (int i = 0; i < questions; i++) {
+                int labelLength;
+                while ((labelLength = responseStreamData.readByte()) != 0) {
+                    responseStreamData.skipBytes(labelLength);
+                }
+                responseStreamData.skipBytes(4);
+            }
+
+            for (int i = 0; i < answers; i++) {
+                responseStreamData.readShort();
+                short answerType = responseStreamData.readShort();
+                responseStreamData.readShort();
+                responseStreamData.readInt();
+                short dataLen = responseStreamData.readShort();
+
+                if (answerType == type) {
+                    if (answerType == 15) { // MX record
+                        responseStreamData.skipBytes(2); // Skip preference
+                    }
+
+
+
+
+
             throw new Exception("Not implemented");
         }
     }
