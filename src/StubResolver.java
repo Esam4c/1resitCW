@@ -310,11 +310,12 @@ public class StubResolver implements StubResolverInterface {
                 if (answerType == 15) { // MX record
                     responseStreamData.skipBytes(2); // Skip preference
                 }
-
-
-                throw new Exception("Not implemented");
+                return helperParseName(responseStreamData, serverResponseBuffer);
+            } else {
+                responseStreamData.skipBytes(dataLen);
             }
         }
+        return null;
     }
 
     //my own helper method to parse a domain name from a DNS response / handling pointers
@@ -342,6 +343,7 @@ public class StubResolver implements StubResolverInterface {
             }
         }
         return String.join(".", labels);
+
 
     }
 }
