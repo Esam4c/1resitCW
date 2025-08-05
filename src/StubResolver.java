@@ -122,9 +122,7 @@ public class StubResolver implements StubResolverInterface {
         //loop for 'A' record
         for (int i = 0; i < answers; i++) {
             //read name of field
-            responseStreamData.readShort();
-
-
+            responseStreamData.readShort();//skip namepointer
             short answerType = responseStreamData.readShort();
             responseStreamData.readShort(); // class
             responseStreamData.readInt();   // TTL
@@ -141,9 +139,6 @@ public class StubResolver implements StubResolverInterface {
             }
         }
         return null;
-
-
-	throw new Exception("Not implemented");
     }
     
     public String recursiveResolveText(String domainName) throws Exception {
