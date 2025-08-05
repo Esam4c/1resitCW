@@ -33,24 +33,24 @@ public class StubResolver implements StubResolverInterface {
     private int dnsServerPort;
 
     public void setNameServer(InetAddress ipAddress, int port) throws Exception {
-	// This method must be called first.
-	// You can assume that the IP address and port number lead to
-	// a working domain name server which supports recursive
-	// queries.
+        // This method must be called first.
+        // You can assume that the IP address and port number lead to
+        // a working domain name server which supports recursive
+        // queries.
         this.dnsServerAddress = ipAddress; //assign address
         this.dnsServerPort = port; //asign port
     }
 
     public InetAddress recursiveResolveAddress(String domainName) throws Exception {
-	// You can assume that domainName is a valid domain name.
-	//
-	// Performs a recursive resolution for domainName's A resource
-	// record using the name server given by setNameServer.
-	//
-	// If the domainName has A records, it returns the IP
-	// address from one of them.  If there is no record then it
-	// returns null.  In any other case it throws an informative
-	// exception.
+        // You can assume that domainName is a valid domain name.
+        //
+        // Performs a recursive resolution for domainName's A resource
+        // record using the name server given by setNameServer.
+        //
+        // If the domainName has A records, it returns the IP
+        // address from one of them.  If there is no record then it
+        // returns null.  In any other case it throws an informative
+        // exception.
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         DataOutputStream dataStream = new DataOutputStream(byteStream); //build packet in memory
 
@@ -108,7 +108,7 @@ public class StubResolver implements StubResolverInterface {
         short additional = responseStreamData.readShort();
         //error-check for query=response
         if (receivedTransactionID != transactionNum) {
-            throw new Exception("QUERY FAILED! Transaction IDS don't match!")
+            throw new Exception("QUERY FAILED! Transaction IDS don't match!");
         }
 
         for (int i = 0; i < questions; i++) {
@@ -140,32 +140,111 @@ public class StubResolver implements StubResolverInterface {
         }
         return null;
     }
-    
+
     public String recursiveResolveText(String domainName) throws Exception {
-	// You can assume that domainName is a valid domain name.
-	//
-	// Performs a recursive resolution for domainName's TXT resource
-	// record using the name server given by setNameServer.
-	//
-	// If the domainName has TXT records, it returns the string
-	// contained one of the records. If there is no record then it
-	// returns null.  In any other case it throws an informative
-	// exception.
-	throw new Exception("Not implemented");
+        // You can assume that domainName is a valid domain name.
+        //
+        // Performs a recursive resolution for domainName's TXT resource
+        // record using the name server given by setNameServer.
+        //
+        // If the domainName has TXT records, it returns the string
+        // contained one of the records. If there is no record then it
+        // returns null.  In any other case it throws an informative
+        // exception.
+
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        DataOutputStream dataStream = new DataOutputStream(byteStream);
+
+        //build query
+        short transactionNum = (short) new Random().nextInt();
+        dataStream.writeShort(transactionNum);
+        dataStream.writeShort(0x0100);
+        dataStream.writeShort(1);
+        dataStream.writeShort(0);
+        dataStream.writeShort(0);
+        dataStream.writeShort(0);
+
+        String[] domainParts = domainName.split("\\.");
+        for (int i = 0; i < domainParts.length; i++) {
+            byte[] labelBytes = domainParts[i].getBytes("UTF-8");
+            dataStream.writeByte(labelBytes.length);
+            dataStream.write(labelBytes);
+        }
+        dataStream.writeByte(0);
+
+        // reequesting TXT record
+        short recordType = 16;
+        dataStream.writeShort(recordType);
+
+        short recordClass = 1;
+        dataStream.writeShort(recordClass);
+
+        byte[] dnsQueryBytes = byteStream.toByteArray();
+        DatagramSocket socket = new DatagramSocket();
+        DatagramPacket packetSending = new DatagramPacket(dnsQueryBytes, dnsQueryBytes.length, dnsServerAddress, dnsServerPort);
+        socket.send(packetSending);
+        byte[] serverResponseBuffer = new byte[512];
+        DatagramPacket responsePacket = new DatagramPacket(serverResponseBuffer, serverResponseBuffer.length);
+        socket.receive(responsePacket);
+        socket.close();
+
+        ByteArrayInputStream responseStreamBytes = new ByteArrayInputStream(serverResponseBuffer);
+        DataInputStream responseStreamData = new DataInputStream(responseStreamBytes);
+
+        short receivedTransactionID = responseStreamData.readShort();
+        if (receivedTransactionID != transactionNum) {
+            throw new Exception("QUERY FAILED! Transaction IDS don't match!");
+        }
+        responseStreamData.readShort(); //flags
+        short questions = responseStreamData.readShort();
+        short answers = responseStreamData.readShort();
+        responseStreamData.readShort(); //authority
+        responseStreamData.readShort(); //additionkl
+
+        for (int i = 0; i < questions; i++) {
+            int labelLength;
+            while ((labelLength = responseStreamData.readByte()) != 0) {
+                responseStreamData.skipBytes(labelLength);
+            }
+            responseStreamData.skipBytes(4);
+        }
+
+        //loop through answers to find txt record
+        for (int i = 0; i < answers; i++) {
+            responseStreamData.readShort(); // Skip name pointer
+            short answerType = responseStreamData.readShort();
+            responseStreamData.readShort(); // class
+            responseStreamData.readInt();   // TTL
+            short dataLen = responseStreamData.readShort();
+
+            //check if its txt record
+
+            if (answerType == 16) {
+                int txtLength = responseStreamData.readByte();
+                byte[] txtBytes = new byte[txtLength];
+                responseStreamData.readFully(txtBytes);
+                return new String(txtBytes, "UTF-8");
+            } else {
+                responseStreamData.skipBytes(dataLen);
+            }
+
+        }
+        return null;
     }
-    
-    public String recursiveResolveName(String domainName, int type) throws Exception {
-	// You can assume that domainName is a valid domain name.
-	//
-	// You can assume that type is one of NS, MX or CNAME.
-	//
-	// Performs a recursive resolution for domainName's resource
-	// record using the name server given by setNameServer.
-	//
-	// If the domainName has appropriate records, it returns the
-	// domain name contained in one of the records. If there is no
-	// record then it returns null.  In any other case it throws
-	// an informative exception.
-	throw new Exception("Not implemented");
+
+        public String recursiveResolveName (String domainName,int type) throws Exception {
+            // You can assume that domainName is a valid domain name.
+            //
+            // You can assume that type is one of NS, MX or CNAME.
+            //
+            // Performs a recursive resolution for domainName's resource
+            // record using the name server given by setNameServer.
+            //
+            // If the domainName has appropriate records, it returns the
+            // domain name contained in one of the records. If there is no
+            // record then it returns null.  In any other case it throws
+            // an informative exception.
+            throw new Exception("Not implemented");
+        }
     }
-}
+
