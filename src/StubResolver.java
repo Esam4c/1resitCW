@@ -83,6 +83,14 @@ public class StubResolver implements StubResolverInterface {
         DatagramPacket packetSending = new DatagramPacket(dnsQueryBytes, dnsQueryBytes.length, dnsServerAddress, dnsServerPort);
         socket.send(packetSending);
 
+        // buffer to hold response of server
+        byte[] serverResponseBuffer = new byte[512];
+        DatagramPacket responsePacket = new DatagramPacket(serverResponseBuffer, serverResponseBuffer.length);
+        socket.receive(responsePacket);
+
+        socket.close();
+
+
 
 	throw new Exception("Not implemented");
     }
