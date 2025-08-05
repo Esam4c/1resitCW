@@ -128,16 +128,16 @@ public class StubResolver implements StubResolverInterface {
             short answerType = responseStreamData.readShort();
             responseStreamData.readShort(); // class
             responseStreamData.readInt();   // TTL
-            short dataLen = responseStreamData.readShort();
+            short dataLength = responseStreamData.readShort();
 
             // checks if 'A' record
             if (answerType == 1) {
-                byte[] ipBytes = new byte[dataLen];
+                byte[] ipBytes = new byte[dataLength];
                 responseStreamData.readFully(ipBytes);
                 return InetAddress.getByAddress(ipBytes);
             } else {
                 // if not, skip over
-                responseStreamData.skipBytes(dataLen);
+                responseStreamData.skipBytes(dataLength);
             }
         }
         return null;
@@ -217,7 +217,7 @@ public class StubResolver implements StubResolverInterface {
             short answerType = responseStreamData.readShort();
             responseStreamData.readShort(); // class
             responseStreamData.readInt();   // TTL
-            short dataLen = responseStreamData.readShort();
+            short dataLength = responseStreamData.readShort();
 
             //check if its txt record
 
@@ -227,7 +227,7 @@ public class StubResolver implements StubResolverInterface {
                 responseStreamData.readFully(txtBytes);
                 return new String(txtBytes, "UTF-8");
             } else {
-                responseStreamData.skipBytes(dataLen);
+                responseStreamData.skipBytes(dataLength);
             }
 
         }
@@ -304,7 +304,7 @@ public class StubResolver implements StubResolverInterface {
             short answerType = responseStreamData.readShort();
             responseStreamData.readShort();
             responseStreamData.readInt();
-            short dataLen = responseStreamData.readShort();
+            short dataLength = responseStreamData.readShort();
 
             if (answerType == type) {
                 if (answerType == 15) { // MX record
@@ -312,7 +312,7 @@ public class StubResolver implements StubResolverInterface {
                 }
                 return helperParseName(responseStreamData, serverResponseBuffer);
             } else {
-                responseStreamData.skipBytes(dataLen);
+                responseStreamData.skipBytes(dataLength);
             }
         }
         return null;
