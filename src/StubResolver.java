@@ -6,7 +6,9 @@
 // YOUR_STUDENT_ID_NUMBER_GOES_HERE 220077503
 // YOUR_EMAIL_GOES_HERE Mohammed.Choudhury4@city.ac.uk
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.InetAddress;
 import java.util.Random;
@@ -52,6 +54,7 @@ public class StubResolver implements StubResolverInterface {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         DataOutputStream dataStream = new DataOutputStream(byteStream); //build packet in memory
 
+        //jumpto query
         short transactionNum = (short) new Random().nextInt();
         dataStream.writeShort(transactionNum); //random number for query
 
@@ -89,6 +92,21 @@ public class StubResolver implements StubResolverInterface {
         socket.receive(responsePacket);
 
         socket.close();
+
+        //jumpto response
+
+        //inputstreams for reading response bytes
+
+        ByteArrayInputStream responseStreamBytes = new ByteArrayInputStream(serverResponseBuffer);
+        DataInputStream responseStreamData = new DataInputStream(responseStreamBytes);
+
+        short receivedTransactionID = responseStreamData.readShort();
+        short flags = responseStreamData.readShort();
+        short questions = responseStreamData.readShort();
+        short answers = responseStreamData.readShort();
+        short authority = responseStreamData.readShort();
+        short additional = responseStreamData.readShort();
+
 
 
 
