@@ -91,6 +91,47 @@ public class Resolver implements ResolverInterface {
                 socket.receive(responsePacket);
                 socket.close();
 
+                //parse response
+                ByteArrayInputStream responseByteStream = new ByteArrayInputStream(responseBuffer);
+                DataInputStream responseDataStream = new DataInputStream(responseByteStream);
+
+                //read header
+                short responseID = responseDataStream.readShort();
+                if (responseID =! transactionID) {
+                    throw new Exception("ERROR! TransactionID mismatch");
+                }
+                responseDataStream.readShort();//flags
+                short questions = responseDataStream.readShort();
+                short answerCount = responseDataStream.readShort();
+                short authorityCount = responseDataStream.readShort();
+                short additionalCount = responseDataStream.readShort();
+
+                //move stream position past question section
+                int questionsToSkip = questions;
+                while (questionsToSkip > 0) {
+                    int labelSize;
+                    do {
+                        labelSize = responseDataStream.readUnsignedByte();
+                        if (labelSize > 0) {
+                            responseDataStream.skip(labelSize);
+                        }
+                    } while (labelSize != 0);
+
+                    //skip qtype and qclass fields
+                    responseDataStream.skipBytes(4);
+                    questionsToSkip--;
+                }
+
+                // checcks in answer section has our result
+                if (answerCount > 0) {
+                    int answersToProcess = answerCount;
+                    while (answersToProcess > 0) {
+                        //read all fields of the record
+                        short namePointer = responseDataStream.readShort();
+
+                    }
+                }
+
                 queriesSent++;
                 break;
 
