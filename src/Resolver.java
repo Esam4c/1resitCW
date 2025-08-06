@@ -243,7 +243,6 @@ public class Resolver implements ResolverInterface {
         }
         return String.join(".", labels);
     }
-
 }
 
 
