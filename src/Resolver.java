@@ -128,6 +128,22 @@ public class Resolver implements ResolverInterface {
                     while (answersToProcess > 0) {
                         //read all fields of the record
                         short namePointer = responseDataStream.readShort();
+                        short resourceRecordType = responseDataStream.readShort();
+                        short resourceRecordClass = responseDataStream.readShort();
+                        int timeToLive = responseDataStream.readInt();
+                        short resourceDataLength = responseDataStream.readShort();
+
+                        //check for 'A' that we are looking for
+                        if (resourceRecordType == 1) {
+                            byte[] addressBytes = new byte[resourceDataLength];
+                            responseDataStream.readFully(addressBytes);
+                            //successful clause
+                            return InetAddress.getByAddress(addressBytes);
+                        } else {//fail, skip over data to next answer
+                            responseDataStream.skipBytes(resourceDataLength);
+                        }
+                        answersToProcess--;
+
 
                     }
                 }
