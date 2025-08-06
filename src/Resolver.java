@@ -34,16 +34,11 @@ public class Resolver implements ResolverInterface {
     private int rootServerPort;
 
     public void setNameServer(InetAddress ipAddress, int port) throws Exception {
-        // This method must be called first.
-        // You can assume that the IP address and port number lead to
-        // a working domain name server which supports iterative
-        // queries.
-
         this.rootServerAddress = ipAddress;
         this.rootServerPort = port;
     }
 
-        public InetAddress iterativeResolveAddress(String domainName) throws Exception {
+    public InetAddress iterativeResolveAddress(String domainName) throws Exception {
             // You can assume that domainName is a valid domain name.
             //
             // Performs a iterative resolution for domainName's A resource
@@ -61,12 +56,12 @@ public class Resolver implements ResolverInterface {
             int queriesSent = 0;
             while (queriesSent < 20) { // Safety limit to prevent infinite loops.
 
-                queriesSent++; // Increment the counter
-                break; // For now, we stop after one loop.
+                System.out.println("Queery started on server: " + nextServerToQuery.getHostAddress() + "for the domain " + domainName);
+
             }
 
             throw new Exception("Not implemented yet");
-        }
+
 
 
     }
