@@ -58,6 +58,29 @@ public class Resolver implements ResolverInterface {
 
                 System.out.println("Queery started on server: " + nextServerToQuery.getHostAddress() + "for the domain " + domainName);
 
+                //build packet
+                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                DataOutputStream dataStream = new DataOutputStream(byteStream);
+
+                //header
+                dataStream.writeShort((short) new Random().nextInt()); // transaction ID
+                dataStream.writeShort (0x0000);
+                dataStream.writeShort(1); // one question
+                dataStream.writeShort(0); // answer count
+                dataStream.writeShort(0); // authority count
+                dataStream.writeShort(0); // additional count
+
+                //question
+                String[] domainParts = domainName.split("\\.");
+                for (String part : domainParts) {
+                    byte[] partBytes = part.getBytes("UTF-8");
+                    dataStream.writeByte(partBytes.length);
+                    dataStream.write(partBytes);
+                }
+                dataStream.writeByte(0);
+                dataStream.writeShort(1);
+                dataStream.writeShort(1);
+
             }
 
             throw new Exception("Not implemented yet");
