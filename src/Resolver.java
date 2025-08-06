@@ -77,9 +77,22 @@ public class Resolver implements ResolverInterface {
                     dataStream.writeByte(partBytes.length);
                     dataStream.write(partBytes);
                 }
-                dataStream.writeByte(0);
-                dataStream.writeShort(1);
-                dataStream.writeShort(1);
+                dataStream.writeByte(0); //end of domain name
+                dataStream.writeShort(1); //qtype = A (ip address)
+                dataStream.writeShort(1); //qclass = internet
+
+                byte[] queryBytes = byteStream.toByteArray();
+                DatagramSocket socket = new DatagramSocket();
+                DatagramPacket queryPacket = new DatagramPacket(queryBytes, queryBytes.length, nextServerToQuery, rootServerPort);
+                socket.send(queryPacket);
+
+                byte[] responseBuffer = new byte[1024]; // buffer for iterative responses
+                DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
+                socket.receive(responsePacket);
+                socket.close();
+
+                queriesSent++;
+                break;
 
             }
 
