@@ -60,7 +60,7 @@ public class Resolver implements ResolverInterface {
             int queriesSent = 0;
             while (queriesSent < 20) { // Safety limit to prevent infinite loops.
 
-                System.out.println("Queery started on server: " + nextServerToQuery.getHostAddress() + "for the domain " + domainName);
+                System.out.println("Queery started on server: " + nextServerToQuery.getHostAddress() + "for the domain " + currentDomainName);
 
                 //build packet
                 ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
