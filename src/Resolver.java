@@ -193,7 +193,8 @@ public class Resolver implements ResolverInterface {
                 throw new Exception("ERROR! No answer and no valid referral found!");
             }
         }
-        throw new Exception("Could not resolve domain name after " + queriesSent + " queries");
+        throw new Exception("Could not resolve domain name ");
+
     }
 
 
@@ -207,6 +208,18 @@ public class Resolver implements ResolverInterface {
         // contained one of the records. If there is no record then it
         // returns null.  In any other case it throws an informative
         // exception.
+        String currentDomainName = domainName;
+        for (int cnameLoops = 0; cnameLoops < 5; cnameLoops++) {
+            InetAddress nextServerToQuery = rootServerAddress;
+            int queriesSent = 0;
+            while (queriesSent < 20) {
+                System.out.println("Querying server: " + nextServerToQuery.getHostAddress() + "for the TXT record of " + currentDomainName);
+            }
+        }
+
+
+
+
         throw new Exception("Not implemented");
     }
 
