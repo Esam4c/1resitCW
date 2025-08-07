@@ -10,9 +10,13 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // DO NOT EDIT starts
 interface NameServerInterface {
@@ -25,6 +29,7 @@ interface NameServerInterface {
 public class NameServer implements NameServerInterface {
 
     private Resolver internalResolver;
+    private Map<String, byte[]> cache = new HashMap<>(); //cache to store answers we've found
 
     public void setNameServer(InetAddress ipAddress, int port) throws Exception {
 	// This method must be called first.
@@ -48,7 +53,7 @@ public class NameServer implements NameServerInterface {
 
     //server running endless - infinite loop start
         while (true) {
-            byte[] incomingBuffer = new Byte[1024];
+            byte[] incomingBuffer = new byte[1024];
             DatagramPacket incomingPacket = new DatagramPacket(incomingBuffer, incomingBuffer.length);
 
             //pause program until query arrives
@@ -62,8 +67,33 @@ public class NameServer implements NameServerInterface {
 
             //create streams to read incoming data
             ByteArrayInputStream byteStream = new ByteArrayInputStream(incomingPacket.getData());
+            DataInputStream dataStream = new DataInputStream(byteStream);
 
+            // 1. Read the header to get the Transaction ID
+            short transactionID = dataStream.readShort();
+            // We can skip the rest of the header for now
+            dataStream.skipBytes(10);
 
+            // 2. Parse the question to get the domain name and type
+            String domainName = helperReadName(dataStream, incomingPacket.getData());
+            short queryType = dataStream.readShort();
+            short queryClass = dataStream.readShort();
+
+            System.out.println("Client is asking for type " + queryType + " record for " + domainName);
+
+            String cacheKey = domainName + ":" + queryType;
+            byte[] responsePacketBytes;
+
+            if(cache.containsKey(cacheKey)) {
+                //case 1, answer is in cache
+                System.out.println("Found answer in cache for " + domainName);
+                byte[] cachedAnswerRecord = cache.get(cacheKey);
+                responsePacketBytes = buildResponsePacket(incomingPacket.getData(), transactionID, cachedAnswerRecord);
+            } else {//case 2 answer isnt in cache so needs to be resolved
+                System.out.println("Answer is not in cache. Starting to resolve " + domainName + "...");
+                byte[] newAnswerRecord = null;
+                //NEED TO CONTINUE FROM HERE
+            }
         }
     }
 
