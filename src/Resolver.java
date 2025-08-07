@@ -118,7 +118,7 @@ public class Resolver implements ResolverInterface {
                     do {
                         labelSize = responseDataStream.readUnsignedByte();
                         if (labelSize > 0) {
-                            responseDataStream.skip(labelSize);
+                            responseDataStream.skipBytes(labelSize);
                         }
                     } while (labelSize != 0);
 
@@ -129,25 +129,29 @@ public class Resolver implements ResolverInterface {
 
                 // checcks in answer section has our result  (CASE 1)
                 if (answerCount > 0) {
-                    int answersToProcess = answerCount;
-                    while (answersToProcess > 0) {
-                        //read all fields of the record
+                    boolean foundCname = false;
+                    for (int j = 0; j < answerCount; j++) {
                         String recordName = helperReadName(responseDataStream, responseBuffer);
                         short resourceRecordType = responseDataStream.readShort();
-                        short resourceRecordClass = responseDataStream.readShort();
-                        int timeToLive = responseDataStream.readInt();
+                        responseDataStream.readShort();
+                        responseDataStream.readInt();
                         short resourceDataLength = responseDataStream.readShort();
 
                         //check for 'A' that we are looking for
-                        if (resourceRecordType == 1) {
+                        if (resourceRecordType == 1) { // A Record
                             byte[] addressBytes = new byte[resourceDataLength];
                             responseDataStream.readFully(addressBytes);
-                            //successful clause
                             return InetAddress.getByAddress(addressBytes);
-                        } else {//fail, skip over data to next answer
+                        } else if (resourceRecordType == 5) { // CNAME Record
+                            currentDomainName = helperReadName(responseDataStream, responseBuffer);
+                            foundCname = true;
+                            break;
+                        } else {
                             responseDataStream.skipBytes(resourceDataLength);
                         }
-                        answersToProcess--;
+                    }
+                    if (foundCname){
+                        break;
                     }
                 }
                 //referral instead of final answer (CASE 2)
