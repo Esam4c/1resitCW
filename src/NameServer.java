@@ -60,6 +60,10 @@ public class NameServer implements NameServerInterface {
 
             System.out.println("Received query from client: " + clientAddress.getHostAddress());
 
+            //create streams to read incoming data
+            ByteArrayInputStream byteStream = new ByteArrayInputStream(incomingPacket.getData());
+
+
         }
     }
 
