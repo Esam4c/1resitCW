@@ -194,7 +194,6 @@ public class Resolver implements ResolverInterface {
             }
         }
         throw new Exception("Could not resolve domain name ");
-
     }
 
 
@@ -373,7 +372,7 @@ public class Resolver implements ResolverInterface {
                     dataStream.write(partBytes);
                 }
                 dataStream.writeByte(0);
-                // CHANGE #1: Use the 'type' parameter from the method
+                // change - type parameter from method
                 dataStream.writeShort(type);
                 dataStream.writeShort(1);
 
