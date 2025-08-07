@@ -348,7 +348,131 @@ public class Resolver implements ResolverInterface {
         // domain name contained in one of the records. If there is no
         // record then it returns null.  In any other case it throws
         // an informative exception.
-        throw new Exception("Not implemented");
+        String currentDomainName = domainName;
+        for (int cnameLoops = 0; cnameLoops < 5; cnameLoops++) {
+            InetAddress nextServerToQuery = rootServerAddress;
+            int queriesSent = 0;
+            while (queriesSent < 20) {
+                System.out.println("Querying server: " + nextServerToQuery.getHostAddress() + " for type " + type + " record of " + currentDomainName);
+
+                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                DataOutputStream dataStream = new DataOutputStream(byteStream);
+
+                short transactionID = (short) new Random().nextInt();
+                dataStream.writeShort(transactionID);
+                dataStream.writeShort(0x0000);
+                dataStream.writeShort(1);
+                dataStream.writeShort(0);
+                dataStream.writeShort(0);
+                dataStream.writeShort(0);
+
+                String[] domainParts = currentDomainName.split("\\.");
+                for (String part : domainParts) {
+                    byte[] partBytes = part.getBytes("UTF-8");
+                    dataStream.writeByte(partBytes.length);
+                    dataStream.write(partBytes);
+                }
+                dataStream.writeByte(0);
+                // CHANGE #1: Use the 'type' parameter from the method
+                dataStream.writeShort(type);
+                dataStream.writeShort(1);
+
+                byte[] queryBytes = byteStream.toByteArray();
+                DatagramSocket socket = new DatagramSocket();
+                DatagramPacket queryPacket = new DatagramPacket(queryBytes, queryBytes.length, nextServerToQuery, rootServerPort);
+                socket.send(queryPacket);
+
+                byte[] responseBuffer = new byte[1024];
+                DatagramPacket responsePacket = new DatagramPacket(responseBuffer, responseBuffer.length);
+                socket.receive(responsePacket);
+                socket.close();
+
+                DataInputStream responseDataStream = new DataInputStream(new ByteArrayInputStream(responseBuffer));
+                short responseID = responseDataStream.readShort();
+                if (responseID != transactionID) {
+                    throw new Exception("ERROR! TransactionID mismatch");
+                }
+                responseDataStream.readShort();
+                short questions = responseDataStream.readShort();
+                short answerCount = responseDataStream.readShort();
+                short authorityCount = responseDataStream.readShort();
+                short additionalCount = responseDataStream.readShort();
+
+                for (int j = 0; j < questions; j++) {
+                    int labelSize;
+                    do {
+                        labelSize = responseDataStream.readUnsignedByte();
+                        if (labelSize > 0) {
+                            responseDataStream.skipBytes(labelSize);
+                        }
+                    } while (labelSize != 0);
+                    responseDataStream.skipBytes(4);
+                }
+
+                if (answerCount > 0) {
+                    boolean foundCname = false;
+                    for (int j = 0; j < answerCount; j++) {
+                        String recordName = helperReadName(responseDataStream, responseBuffer);
+                        short resourceRecordType = responseDataStream.readShort();
+                        responseDataStream.readShort();
+                        responseDataStream.readInt();
+                        short resourceDataLength = responseDataStream.readShort();
+
+                        // change - check for requested type
+                        if (resourceRecordType == type) {
+                            // MX records need to skip 2 byte reference
+                            if (type == 15) { // 15 is MX
+                                responseDataStream.skipBytes(2);
+                            }
+                            return helperReadName(responseDataStream, responseBuffer);
+                        } else if (resourceRecordType == 5) { // CNAME Record
+                            currentDomainName = helperReadName(responseDataStream, responseBuffer);
+                            foundCname = true;
+                            break;
+                        } else {
+                            responseDataStream.skipBytes(resourceDataLength);
+                        }
+                    }
+                    if (foundCname) {
+                        break;
+                    }
+                } else if (authorityCount > 0) {
+                    Map<String, InetAddress> glueRecords = new HashMap<>();
+                    List<String> nsNames = new ArrayList<>();
+                    for (int j = 0; j < authorityCount + additionalCount; j++) {
+                        String recordName = helperReadName(responseDataStream, responseBuffer);
+                        short recordType = responseDataStream.readShort();
+                        responseDataStream.readShort();
+                        responseDataStream.readInt();
+                        short dataLength = responseDataStream.readShort();
+                        if (recordType == 2) {
+                            String nsDomainName = helperReadName(responseDataStream, responseBuffer);
+                            nsNames.add(nsDomainName);
+                        } else if (recordType == 1) {
+                            byte[] ipBytes = new byte[dataLength];
+                            responseDataStream.readFully(ipBytes);
+                            glueRecords.put(recordName, InetAddress.getByAddress(ipBytes));
+                        } else {
+                            responseDataStream.skipBytes(dataLength);
+                        }
+                    }
+                    boolean foundNextServer = false;
+                    for (String nsName : nsNames) {
+                        if (glueRecords.containsKey(nsName)) {
+                            nextServerToQuery = glueRecords.get(nsName);
+                            foundNextServer = true;
+                            break;
+                        }
+                    }
+                    if (foundNextServer) {
+                        queriesSent++;
+                        continue;
+                    }
+                }
+                throw new Exception("Resolution failed: No answer and no valid referral found.");
+            }
+        }
+        return null;
     }
 
     private String helperReadName(DataInputStream dataStream, byte[] fullPacket) throws Exception {
